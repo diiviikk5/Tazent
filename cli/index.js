@@ -12,10 +12,13 @@ if (args.length === 0) {
               TAZENT CLI WRAPPER                  
 ==================================================
 Usage:
-  npx tazent <script-path> [args...]
+  node cli/index.js <script-path> [options] [args...]
 
+Options:
+  --url, -u <target-url>   Define the primary URL being monitored
+  
 Example:
-  node cli/index.js demo/mock-agent.js
+  node cli/index.js demo/mock-agent.js --url https://github.com
   
 Tazent CLI will wrap your browser agent script execution, 
 capturing unhandled exceptions, stderr logs, and process
@@ -24,17 +27,37 @@ exits, and pipe them directly into the Tazent Dashboard.
   process.exit(0);
 }
 
-const scriptPath = path.resolve(args[0]);
-const scriptArgs = args.slice(1);
+// Parse custom command line options
+let targetUrl = null;
+const scriptArgs = [];
+let scriptPathIndex = -1;
+
+for (let i = 0; i < args.length; i++) {
+  if ((args[i] === '--url' || args[i] === '-u') && i + 1 < args.length) {
+    targetUrl = args[i + 1];
+    i++; // Skip the next index since it is the value
+  } else if (scriptPathIndex === -1) {
+    scriptPathIndex = i;
+  } else {
+    scriptArgs.push(args[i]);
+  }
+}
+
+if (scriptPathIndex === -1) {
+  console.error('[Tazent CLI] Error: No script path specified to monitor.');
+  process.exit(1);
+}
+
+const scriptPath = path.resolve(args[scriptPathIndex]);
 const scriptName = path.basename(scriptPath);
 
 async function runWrapper() {
   console.log(`[Tazent CLI] 🛸 Monitoring agent run: "${scriptName}"`);
   
-  // Register the run start automatically
+  // Register the run start automatically, supporting custom targetUrls
   const runId = await AgentTrace.startRun({
     agentName: `CLI::${scriptName}`,
-    url: `cli://${scriptName}`,
+    url: targetUrl || `cli://${scriptName}`,
     metadata: {
       mode: 'CLI Interceptor',
       os: process.platform === 'win32' ? 'Windows' : 'Unix',
