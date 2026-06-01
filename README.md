@@ -1,24 +1,24 @@
-# Tazent 🛸
+# Tazent
 
-**Tazent** is a premium, real-time crash and telemetry monitoring system built specifically for browser-using agents (Playwright, Puppeteer, Selenium). Think of it as **Sentry, but for Browser Agents**. 
+**Tazent** is a premium, real-time crash and telemetry monitoring system built specifically for browser-using agents (Playwright, Puppeteer, Selenium). Think of it as **Sentry, but for Browser Agents**.
 
 When autonomous browser agents fail in production, standard stack traces are insufficient. Tazent traces every page navigation, button click, input entry, and delay, recording structured snapshots of what the agent "saw" so you can diagnose layout shifts, Cloudflare captcha walls, and selector changes in seconds.
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 * **Visual Replay Timeline**: Inspect the browser agent's actions step-by-step with glowing, interactive visual states.
 * **Automatic Failure Classification**: Recognizes common agent failures out-of-the-box (`SELECTOR_MISSING`, `TIMEOUT`, `CAPTCHA`, `AUTH_FAILURE`, `PAGE_CHANGED`, `NETWORK_ERROR`).
 * **Heuristic AI "Why it Failed" Summaries**: Translates cryptic DOM error objects into clear developer-friendly root causes and recommendations.
 * **Failure Clustering**: Groups common repeating crashes dynamically by URL, failing target, and error signatures.
 * **Zero-Config Database**: Operates using a light, high-performance file-backed JSON structure (`tazent-db.json`) optimized for Windows development environments.
-* **CLI Interceptor**: Wrap *any* existing script to auto-trace exit codes and exception outputs without altering a line of source code.
+* **CLI Interceptor**: Wrap any existing script to auto-trace exit codes and exception outputs without altering a line of source code.
 * **Slack & GitHub Export**: Simulated one-click exports to broadcast Slack alerts or open pre-filled GitHub issue tickets containing DOM snippets and screenshots.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 /tazent
@@ -39,7 +39,7 @@ When autonomous browser agents fail in production, standard stack traces are ins
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 Tazent is pre-configured and ready to run with zero dependencies on external databases.
 
@@ -65,7 +65,7 @@ node cli/index.js demo/mock-agent.js
 
 ---
 
-## 🛠 Integrating the AgentTrace SDK
+## Integrating the AgentTrace SDK
 
 Import and initialize the `AgentTrace` SDK in your Playwright / Puppeteer agent scripts:
 
@@ -113,7 +113,7 @@ async function runMyScraper() {
 
 ---
 
-## 🎨 Design Theme Specification
+## Design Theme Specification
 
 * **Base**: `#090a0f` deep space black and `#11131e` slate charcoal.
 * **Accents**: Neon `#7c3aed` purple and glowing `#10b981` emerald green.
