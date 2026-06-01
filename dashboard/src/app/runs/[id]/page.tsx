@@ -41,6 +41,7 @@ export default function RunDetail() {
   const [run, setRun] = useState<AgentRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedSteps, setExpandedSteps] = useState<Record<number, boolean>>({});
+  const [stepFilter, setStepFilter] = useState<'all' | 'errors' | 'interactions'>('all');
 
   const fetchRunDetails = async () => {
     try {
@@ -211,6 +212,17 @@ export default function RunDetail() {
     );
   }
 
+  // Filter steps client-side based on the active tab segment
+  const filteredSteps = run.steps.filter(step => {
+    if (stepFilter === 'errors') {
+      return step.status === 'failed' || step.actionType === 'error';
+    }
+    if (stepFilter === 'interactions') {
+      return ['click', 'fill', 'scrape'].includes(step.actionType);
+    }
+    return true;
+  });
+
   return (
     <main className="app-container">
       {/* Header and Back Link */}
@@ -263,24 +275,55 @@ export default function RunDetail() {
       <section className="run-detail-grid">
         {/* Timeline (Left Column) */}
         <div>
-          <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>
+          <h2 className="section-title" style={{ marginBottom: '1.25rem' }}>
             <span>⏱</span> Replay Timeline ({run.steps.length} actions)
           </h2>
+
+          {/* Timeline Step Filter Segment Controller */}
+          {run.steps.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '1.25rem', background: '#131520', padding: '0.25rem', borderRadius: '6px', border: '1px solid var(--border-color)', alignSelf: 'flex-start', maxWidth: 'max-content' }}>
+              <button 
+                onClick={() => setStepFilter('all')}
+                style={{ background: stepFilter === 'all' ? '#181b2a' : 'transparent', border: 'none', borderRadius: '4px', padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: stepFilter === 'all' ? '#fff' : 'var(--color-text-muted)', cursor: 'pointer', transition: 'all var(--transition-fast)' }}
+              >
+                All Steps ({run.steps.length})
+              </button>
+              <button 
+                onClick={() => setStepFilter('errors')}
+                style={{ background: stepFilter === 'errors' ? 'var(--color-error-glow)' : 'transparent', border: 'none', borderRadius: '4px', padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: stepFilter === 'errors' ? 'var(--color-error)' : 'var(--color-text-muted)', cursor: 'pointer', transition: 'all var(--transition-fast)' }}
+              >
+                Errors ({run.steps.filter(s => s.status === 'failed' || s.actionType === 'error').length})
+              </button>
+              <button 
+                onClick={() => setStepFilter('interactions')}
+                style={{ background: stepFilter === 'interactions' ? 'var(--color-primary-glow)' : 'transparent', border: 'none', borderRadius: '4px', padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: stepFilter === 'interactions' ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', cursor: 'pointer', transition: 'all var(--transition-fast)' }}
+              >
+                Interactions ({run.steps.filter(s => ['click', 'fill', 'scrape'].includes(s.actionType)).length})
+              </button>
+            </div>
+          )}
 
           {run.steps.length === 0 ? (
             <div className="glass-card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
               No interaction steps logged for this run yet. If this run is active, actions will appear dynamically.
             </div>
+          ) : filteredSteps.length === 0 ? (
+            <div className="glass-card" style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--color-text-muted)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontWeight: 600, color: '#fff', marginBottom: '0.25rem', fontSize: '1.1rem' }}>No matching steps</p>
+              <p style={{ fontSize: '0.85rem' }}>No logged actions in this run match your active segment filter.</p>
+            </div>
           ) : (
             <div className="timeline">
-              {run.steps.map((step, index) => {
-                const isExpanded = !!expandedSteps[index];
+              {filteredSteps.map((step) => {
+                // Find the original index of the step in run.steps to ensure step number displays correctly (1-indexed)
+                const stepIndex = run.steps.findIndex(s => s.id === step.id);
+                const isExpanded = !!expandedSteps[stepIndex];
                 return (
                   <div key={step.id} className={`timeline-step ${step.status === 'failed' ? 'step-failed' : ''}`}>
                     {/* Header bar */}
-                    <div className="timeline-step-header" onClick={() => toggleStep(index)}>
+                    <div className="timeline-step-header" onClick={() => toggleStep(stepIndex)}>
                       <div className="step-info">
-                        <div className="step-number">{index + 1}</div>
+                        <div className="step-number">{stepIndex + 1}</div>
                         <span className={`step-badge ${step.actionType}`}>
                           {step.actionType}
                         </span>
@@ -309,7 +352,7 @@ export default function RunDetail() {
                           <span className="visual-title">Visual Replay</span>
                           <div className="screenshot-container">
                             {step.screenshot ? (
-                              <img src={step.screenshot} className="screenshot-img" alt={`Step ${index + 1} capture`} />
+                              <img src={step.screenshot} className="screenshot-img" alt={`Step ${stepIndex + 1} capture`} />
                             ) : (
                               renderMockBrowser(step, run.url)
                             )}
