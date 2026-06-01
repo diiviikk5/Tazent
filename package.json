@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "npm --prefix dashboard run dev",
-    "demo": "node demo/mock-agent.js"
+    "demo": "node demo/mock-agent.js",
+    "real-agent": "node demo/real-agent.js"
   },
   "keywords": [
     "browser-agent",
@@ -18,5 +19,8 @@
     "monitoring"
   ],
   "author": "Antigravity Pair Programmer",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
 }
