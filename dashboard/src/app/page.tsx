@@ -155,6 +155,10 @@ export default function DashboardHome() {
       return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime();
     });
 
+  // Extract chart telemetry data (last 8 runs, chronological order)
+  const chartRuns = [...runs].slice(0, 8).reverse();
+  const maxDur = Math.max(...chartRuns.map(r => r.duration / 1000), 5);
+
   return (
     <main className="app-container">
       {/* Header Panel */}
@@ -221,6 +225,90 @@ export default function DashboardHome() {
           <h2 className="section-title">
             <span style={{ fontSize: '1.2rem' }}>⚡</span> Runs Telemetry
           </h2>
+
+          {/* SVG Telemetry Analytics Duration Chart */}
+          {runs.length > 0 && (
+            <div style={{ marginBottom: '1.75rem', padding: '1.25rem', background: 'rgba(0,0,0,0.25)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Execution Duration Trend (Last 8 Runs)
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-primary-hover)', fontWeight: 600 }}>
+                  Peak: {(maxDur).toFixed(1)}s
+                </span>
+              </div>
+              
+              <div style={{ width: '100%', height: '110px' }}>
+                <svg width="100%" height="100%" viewBox="0 0 500 100" preserveAspectRatio="none">
+                  {/* Horizontal Scale Lines */}
+                  <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                  <line x1="0" y1="50" x2="500" y2="50" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                  <line x1="0" y1="80" x2="500" y2="80" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                  
+                  {/* Rounded Dynamic Columns */}
+                  {chartRuns.map((r, i) => {
+                    const x = i * (500 / 8) + 12;
+                    const width = (500 / 8) - 24;
+                    const height = ((r.duration / 1000) / maxDur) * 80;
+                    const y = 90 - height;
+                    const isFailed = r.status === 'failed';
+                    
+                    return (
+                      <g key={r.id}>
+                        {/* Interactive column */}
+                        <rect
+                          x={x}
+                          y={y}
+                          width={width}
+                          height={Math.max(height, 4)}
+                          rx="3"
+                          fill={isFailed ? 'url(#errColumnGrad)' : 'url(#successColumnGrad)'}
+                          opacity={r.status === 'running' ? 0.6 : 0.9}
+                          style={{ transition: 'all 0.2s ease-in-out' }}
+                        />
+                        {/* Floating exact duration value */}
+                        <text
+                          x={x + width / 2}
+                          y={y - 5}
+                          textAnchor="middle"
+                          fill={isFailed ? 'var(--color-error)' : 'var(--color-success)'}
+                          fontSize="6.5"
+                          fontWeight="700"
+                          fontFamily="var(--font-mono)"
+                        >
+                          {((r.duration / 1000)).toFixed(1)}s
+                        </text>
+                      </g>
+                    );
+                  })}
+                  
+                  {/* Bottom timeline base-line */}
+                  <line x1="0" y1="90" x2="500" y2="90" stroke="var(--border-color)" strokeWidth="1" />
+                  
+                  {/* Custom color gradients */}
+                  <defs>
+                    <linearGradient id="successColumnGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-success)" />
+                      <stop offset="100%" stopColor="rgba(16, 185, 129, 0.1)" />
+                    </linearGradient>
+                    <linearGradient id="errColumnGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-error)" />
+                      <stop offset="100%" stopColor="rgba(244, 63, 94, 0.1)" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              
+              {/* Chronological agent labels */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                {chartRuns.map((r) => (
+                  <span key={r.id} style={{ fontSize: '0.6rem', color: 'var(--color-text-dim)', textAlign: 'center', width: `${100 / 8}%`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
+                    {r.agentName.replace('Agent', '')}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           
           {loading && runs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
