@@ -48,6 +48,11 @@ export default function DashboardHome() {
   }>({ show: false, type: null, groupId: null, result: null });
   const [resetting, setResetting] = useState(false);
 
+  // Search, Filter and Sort States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('startedAt');
+
   // Fetch all runs and failure groups
   const fetchData = async () => {
     try {
@@ -134,6 +139,22 @@ export default function DashboardHome() {
   const successRate = totalRuns > 0 ? Math.round(((totalRuns - failedRuns - runningRuns) / (totalRuns - runningRuns || 1)) * 100) : 100;
   const avgDuration = totalRuns > 0 ? Math.round(runs.reduce((acc, r) => acc + r.duration, 0) / totalRuns) : 0;
 
+  // Filter and sort runs dynamically on the client for instant responsiveness
+  const filteredRuns = runs
+    .filter(run => {
+      const matchesSearch = run.agentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            run.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            run.url.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' ? true : run.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'duration') {
+        return b.duration - a.duration;
+      }
+      return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime();
+    });
+
   return (
     <main className="app-container">
       {/* Header Panel */}
@@ -211,45 +232,83 @@ export default function DashboardHome() {
               <p style={{ fontSize: '0.85rem' }}>Run a browser agent using the AgentTrace SDK to populate this feed in real-time.</p>
             </div>
           ) : (
-            <div className="table-container">
-              <table className="runs-table">
-                <thead>
-                  <tr>
-                    <th>Agent Name</th>
-                    <th>Status</th>
-                    <th>Steps</th>
-                    <th>Target URL</th>
-                    <th>Duration</th>
-                    <th>Logged At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {runs.map((run) => (
-                    <tr key={run.id}>
-                      <td>
-                        <Link href={`/runs/${run.id}`} className="run-link">
-                          {run.agentName}
-                        </Link>
-                        <div className="run-meta-text">ID: {run.id}</div>
-                      </td>
-                      <td>
-                        <span className={`badge badge-${run.status}`}>
-                          {run.status === 'running' && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#fff', marginRight: '6px', animation: 'fade-in 0.8s infinite alternate' }}></span>}
-                          {run.status}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{run.steps.length}</span> steps
-                      </td>
-                      <td style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span className="run-meta-text" style={{ fontFamily: 'var(--font-mono)' }}>{run.url}</span>
-                      </td>
-                      <td style={{ fontWeight: 500 }}>{formatDuration(run.duration)}</td>
-                      <td className="run-meta-text">{formatDate(run.startedAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              {/* Search, Filter, Sort Controls Panel */}
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <input 
+                  type="text" 
+                  placeholder="Search by agent name, ID, or target URL..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ flex: 1, minWidth: '220px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem 0.85rem', fontSize: '0.85rem', color: '#fff', outline: 'none' }}
+                />
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{ background: '#181b2a', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem 0.85rem', fontSize: '0.85rem', color: '#fff', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="success">Success Only</option>
+                  <option value="failed">Failed Only</option>
+                  <option value="running">Running Only</option>
+                </select>
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{ background: '#181b2a', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem 0.85rem', fontSize: '0.85rem', color: '#fff', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="startedAt">Sort: Newest First</option>
+                  <option value="duration">Sort: Longest Duration</option>
+                </select>
+              </div>
+
+              {filteredRuns.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--color-text-muted)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                  <p style={{ fontWeight: 600, color: '#fff', marginBottom: '0.25rem', fontSize: '1.1rem' }}>No matching traces</p>
+                  <p style={{ fontSize: '0.85rem' }}>No browser agent runs match your active search terms or status filters.</p>
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="runs-table">
+                    <thead>
+                      <tr>
+                        <th>Agent Name</th>
+                        <th>Status</th>
+                        <th>Steps</th>
+                        <th>Target URL</th>
+                        <th>Duration</th>
+                        <th>Logged At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRuns.map((run) => (
+                        <tr key={run.id}>
+                          <td>
+                            <Link href={`/runs/${run.id}`} className="run-link">
+                              {run.agentName}
+                            </Link>
+                            <div className="run-meta-text">ID: {run.id}</div>
+                          </td>
+                          <td>
+                            <span className={`badge badge-${run.status}`}>
+                              {run.status === 'running' && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#fff', marginRight: '6px', animation: 'fade-in 0.8s infinite alternate' }}></span>}
+                              {run.status}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{run.steps.length}</span> steps
+                          </td>
+                          <td style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span className="run-meta-text" style={{ fontFamily: 'var(--font-mono)' }}>{run.url}</span>
+                          </td>
+                          <td style={{ fontWeight: 500 }}>{formatDuration(run.duration)}</td>
+                          <td className="run-meta-text">{formatDate(run.startedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
