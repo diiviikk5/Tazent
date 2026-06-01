@@ -102,7 +102,7 @@ async function testDatabase() {
 
   // 5. Verify Heuristic Classifier
   const failedRun = TazentDb.getRunById('test-run-2');
-  assert.ok(failedRun.failureSummary.includes('#checkout-pay'), 'Failure Summary should contain the targeted selector context.');
+  assert.ok(failedRun.failureSummary.includes('#pay-button'), 'Failure Summary should contain the targeted selector context.');
   console.log('✓ Heuristic failure classification verified.');
 
   console.log('\n==================================================');
