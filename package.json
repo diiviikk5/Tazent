@@ -2,7 +2,10 @@
   "name": "tazent-workspace",
   "version": "1.0.0",
   "description": "Tazent - Sentry for Browser Agents",
-  "private": true,
+  "private": false,
+  "bin": {
+    "tazent": "./cli/index.js"
+  },
   "scripts": {
     "dev": "npm --prefix dashboard run dev",
     "demo": "node demo/mock-agent.js"
